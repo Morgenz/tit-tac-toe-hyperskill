@@ -3,31 +3,31 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
-public class Main {
-    char[][] board = new char[3][3];
-    static String[] typeOfPlayers = {"easy", "user"};
+interface Player {
+    public void makeMove(char[][] board);
+}
 
-    static void printGame(char[][] arr) {
-        System.out.println("---------");
-        for (int i = 0; i < 3; i++) {
-            System.out.print("| ");
-            for (int j = 0; j < 3; j++)
-                if (arr[i][j] == '_')
-                    System.out.print("  ");
-                else
-                    System.out.print(arr[i][j] + " ");
-            System.out.println("|");
+class humanPlayer implements Player {
+    char xOrO;
+
+    humanPlayer(char xOrO) {
+        this.xOrO = xOrO;
+    }
+
+    public void makeMove(char[][] board) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter the coordinates: ");
+        try {
+            enterCoords(board, Integer.parseInt(scanner.next()), Integer.parseInt(scanner.next()), xOrO);
+        } catch (Exception e) {
+            if (e instanceof NumberFormatException)
+                System.out.println("You should enter numbers!");
+            else
+                System.out.println(e.getMessage());
         }
-        System.out.println("---------");
     }
 
-    static void fillGame(char[][] arr, String game) {
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                arr[i][j] = game.charAt(i * 3 + j);
-    }
-
-    static void enterCoords(char[][] arr, int x, int y, char s) {
+    void enterCoords(char[][] arr, int x, int y, char s) {
         x--;
         y--;
         if (x < 0 || x > 2 || y < 0 || y > 2)
@@ -35,6 +35,86 @@ public class Main {
         if (arr[2 - y][x] != '_')
             throw new IllegalArgumentException("This cell is occupied! Choose another one!");
         arr[2 - y][x] = s;
+    }
+}
+
+class easyComputerPlayer implements Player {
+    char xOrO;
+
+    easyComputerPlayer(char xOrO) {
+        this.xOrO = xOrO;
+    }
+
+    public void makeMove(char[][] board) {
+        Random generator = new Random();
+        System.out.println("Making move level \"easy\"");
+        int x = Math.abs(generator.nextInt() % 3);
+        int y = Math.abs(generator.nextInt() % 3);
+        while (board[x][y] != '_') {
+            x = Math.abs(generator.nextInt() % 3);
+            y = Math.abs(generator.nextInt() % 3);
+        }
+        board[x][y] = xOrO;
+    }
+}
+
+class Game {
+    static String[] typeOfPlayers = {"easy", "user"};
+    char[][] board;
+    static String mode="0";
+    Player player1;
+    Player player2;
+
+    public static String getMode() {
+        return mode;
+    }
+
+    public Game() {
+        this.board = setEmptyBoard(new char[3][3]);
+        String[] userInput = getUserInput();
+        if (userInput[0] != "exit") {
+            this.mode = userInput[0];
+            switch (userInput[1]) {
+                case "user":
+                    player1 = new humanPlayer('X');
+                    break;
+
+                case "easy":
+                    player1 = new easyComputerPlayer('X');
+                    break;
+            }
+            switch (userInput[2]) {
+                case "user":
+                    player2 = new humanPlayer('O');
+                    break;
+                case "easy":
+                    player2 = new easyComputerPlayer('O');
+                    break;
+            }
+        } else {
+            this.mode = "exit";
+        }
+    }
+
+    static char[][] setEmptyBoard(char[][] arr) {
+        for (int i = 0; i < 3; i++) {
+            Arrays.fill(arr[i], '_');
+        }
+        return arr;
+    }
+
+    void printGame() {
+        System.out.println("---------");
+        for (int i = 0; i < 3; i++) {
+            System.out.print("| ");
+            for (int j = 0; j < 3; j++)
+                if (this.board[i][j] == '_')
+                    System.out.print("  ");
+                else
+                    System.out.print(this.board[i][j] + " ");
+            System.out.println("|");
+        }
+        System.out.println("---------");
     }
 
     static char getWinner(char[][] arr) {
@@ -61,77 +141,37 @@ public class Main {
         return 'D';
     }
 
-    static void makeComputerMoveEasyDiff(char[][] arr, char typeOfPlayer) {
-        Random generator = new Random();
-        System.out.println("Making move level \"easy\"");
-        int x = Math.abs(generator.nextInt() % 3);
-        int y = Math.abs(generator.nextInt() % 3);
-        while (arr[x][y] != '_') {
-            x = Math.abs(generator.nextInt() % 3);
-            y = Math.abs(generator.nextInt() % 3);
+    void playTheGame() {
+        if (this.mode.equals("exit")) {
+            return;
         }
-        arr[x][y] = typeOfPlayer;
+        printGame();
+        while (getWinner(board) == '_') {
+            player1.makeMove(board);
+            printGame();
+            if (getWinner(board) != '_')
+                break;
+            player2.makeMove(board);
+            printGame();
+            if (getWinner(board) != '_')
+                break;
+        }
+        printWinner(board);
     }
 
-    static void setEmptyBoard(char[][] arr) {
-        for (int i = 0; i < 3; i++) {
-            Arrays.fill(arr[i], '_');
-        }
-    }
-
-    static void makePlayerMove(char [][]board, char xOrO) {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter the coordinates: ");
-        try {
-            enterCoords(board, Integer.parseInt(scanner.next()), Integer.parseInt(scanner.next()), xOrO);
-        } catch (Exception e) {
-            if (e instanceof NumberFormatException)
-                System.out.println("You should enter numbers!");
-            else
-                System.out.println(e.getMessage());
-        }
-    }
-
-
-    static boolean playTheGame(char [][] board) {
+    private String[] getUserInput() {
         System.out.println("Input command:");
         Scanner scanner = new Scanner(System.in);
         String[] modeAndPlayers = scanner.nextLine().split(" ");
-
         while (!modeAndPlayers[0].equals("start")
                 || modeAndPlayers.length != 3
                 || !Arrays.asList(typeOfPlayers).containsAll(Arrays.asList(modeAndPlayers[1], modeAndPlayers[2]))) {
             if (modeAndPlayers[0].equals("exit"))
-                return false;
+                return new String[]{"exit"};
             System.out.println("Bad parameters!");
             modeAndPlayers = scanner.nextLine().split(" ");
         }
-        String player1=modeAndPlayers[1];
-        String player2=modeAndPlayers[2];
-
-
-        while (getWinner(board) == '_') {
-            if (player1.equals("user")) {
-                makePlayerMove(board, 'X');
-            } else {
-                makeComputerMoveEasyDiff(board, 'X');
-            }
-            printGame(board);
-            if (getWinner(board) != '_')
-                break;
-            if (player2.equals("user")) {
-                makePlayerMove(board, 'O');
-            } else {
-                makeComputerMoveEasyDiff(board, 'O');
-            }
-            printGame(board);
-            if (getWinner(board) != '_')
-                break;
-
-        }
-        printWinner(board);
-        setEmptyBoard(board);
-        return true;
+        return modeAndPlayers;
     }
 
     static void printWinner(char[][] board) {
@@ -144,15 +184,13 @@ public class Main {
         else
             System.out.println("Game not finished");
     }
+}
 
+public class Main {
     public static void main(String[] args) {
-        Main b = new Main();
-        char[][] board = b.board;
-        Scanner scanner = new Scanner(System.in);
-        setEmptyBoard(board);
-
-        while (playTheGame(board)) ;
-
-
+        while (!Game.getMode().equals("exit")) {
+            Game game = new Game();
+            game.playTheGame();
+        }
     }
 }
