@@ -16,14 +16,18 @@ class humanPlayer implements Player {
 
     public void makeMove(char[][] board) {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter the coordinates: ");
+
+        while(true){
+            System.out.println("Enter the coordinates: ");
         try {
             enterCoords(board, Integer.parseInt(scanner.next()), Integer.parseInt(scanner.next()), xOrO);
+            return;
         } catch (Exception e) {
             if (e instanceof NumberFormatException)
                 System.out.println("You should enter numbers!");
             else
                 System.out.println(e.getMessage());
+        }
         }
     }
 
@@ -58,10 +62,112 @@ class easyComputerPlayer implements Player {
     }
 }
 
+class mediumComputerPlayer implements Player {
+    char xOrO;
+
+    mediumComputerPlayer(char xOrO) {
+        this.xOrO = xOrO;
+    }
+
+    public void makeMove(char[][] board) {
+        Random generator = new Random();
+        System.out.println("Making move level \"medium\"");
+        int x = Math.abs(generator.nextInt() % 3);
+        int y = Math.abs(generator.nextInt() % 3);
+        if(tryToWin(board)||tryNotToLose(board)){
+            return;
+        }
+        while (board[x][y] != '_') {
+            x = Math.abs(generator.nextInt() % 3);
+            y = Math.abs(generator.nextInt() % 3);
+        }
+        board[x][y] = xOrO;
+    }
+
+    //check if there is row or column with 2 slots with its X or O and free slot, if it is possible counter==2
+    public boolean tryToWin(char[][] board) {
+        int counter = 0;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] == xOrO)
+                    counter++;
+                else if (!(board[i][j] == '_')) {
+                    counter--;
+                }
+            }
+            if (counter == 2) {
+                for (int j = 0; j < 3; j++)
+                    if (board[i][j] == '_')
+                        board[i][j] = xOrO;
+               return true;
+            }
+            counter=0;
+            
+            for (int j = 0; j < 3; j++) {
+                if (board[j][i] == xOrO)
+                    counter++;
+                else if (!(board[j][i] == '_')) {
+                    counter--;
+                }
+            }
+            if (counter == 2) {
+                for (int j = 0; j < 3; j++)
+                    if (board[j][i] == '_')
+                        board[j][i] = xOrO;
+                return true;
+            }
+            counter=0;
+
+        }
+    return false;
+    }
+    public boolean tryNotToLose(char[][] board) {
+        int counter = 0;
+        char enemy;
+        if(xOrO=='X')
+            enemy='O';
+        else 
+            enemy='X';
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] == enemy)
+                    counter++;
+                else if (!(board[i][j] == '_')) {
+                    counter--;
+                }
+            }
+            if (counter == 2) {
+                for (int j = 0; j < 3; j++)
+                    if (board[i][j] == '_')
+                        board[i][j] = xOrO;
+                return true;
+            }
+            counter=0;
+
+            for (int j = 0; j < 3; j++) {
+                if (board[j][i] == enemy)
+                    counter++;
+                else if (!(board[j][i] == '_')) {
+                    counter--;
+                }
+            }
+            if (counter == 2) {
+                for (int j = 0; j < 3; j++)
+                    if (board[j][i] == '_')
+                        board[j][i] = xOrO;
+                return true;
+            }
+            counter=0;
+
+        }
+        return false;
+    }
+}
+
 class Game {
-    static String[] typeOfPlayers = {"easy", "user"};
+    static String[] typeOfPlayers = {"easy", "user","medium"};
     char[][] board;
-    static String mode="0";
+    static String mode = "0";
     Player player1;
     Player player2;
 
@@ -72,8 +178,8 @@ class Game {
     public Game() {
         this.board = setEmptyBoard(new char[3][3]);
         String[] userInput = getUserInput();
-        if (userInput[0] != "exit") {
-            this.mode = userInput[0];
+        if (!userInput[0] .equals( "exit")) {
+            mode = userInput[0];
             switch (userInput[1]) {
                 case "user":
                     player1 = new humanPlayer('X');
@@ -82,6 +188,10 @@ class Game {
                 case "easy":
                     player1 = new easyComputerPlayer('X');
                     break;
+                case "medium":
+                    player1 = new mediumComputerPlayer('X');
+                    break;
+
             }
             switch (userInput[2]) {
                 case "user":
@@ -90,9 +200,12 @@ class Game {
                 case "easy":
                     player2 = new easyComputerPlayer('O');
                     break;
+                case "medium":
+                    player2 = new mediumComputerPlayer('O');
+                    break;
             }
         } else {
-            this.mode = "exit";
+            mode = "exit";
         }
     }
 
@@ -123,7 +236,6 @@ class Game {
             //poziomo
             if (arr[i][0] == arr[i][1] && arr[i][1] == arr[i][2] && arr[i][0] != '_')
                 return arr[i][0];
-
             //pionowo
             if (arr[0][i] == arr[1][i] && arr[0][i] == arr[2][i] && arr[0][i] != '_')
                 return arr[0][i];
@@ -142,7 +254,7 @@ class Game {
     }
 
     void playTheGame() {
-        if (this.mode.equals("exit")) {
+        if (mode.equals("exit")) {
             return;
         }
         printGame();
